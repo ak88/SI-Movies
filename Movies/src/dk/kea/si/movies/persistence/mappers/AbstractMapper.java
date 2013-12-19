@@ -326,17 +326,17 @@ public abstract class AbstractMapper {
 	}
 	
 	protected void startTransaction() throws SQLException {
-		System.out.println("START TRANSACTION");
+		System.out.println("START TRANSACTION " + System.currentTimeMillis());
 		getConnection().setAutoCommit(false);
 	}
 	
 	protected void commitTransaction() throws SQLException {
-		System.out.println("COMMIT TRANSACTION");
+		System.out.println("COMMIT TRANSACTION " + System.currentTimeMillis());
 		getConnection().commit();
 	}
 	
 	protected void rollbackTransaction() {
-		System.out.println("ROLLBACK TRANSACTION");
+		System.out.println("ROLLBACK TRANSACTION " + System.currentTimeMillis());
 		try {
 			getConnection().rollback();
 		} catch (SQLException e) {
@@ -345,11 +345,38 @@ public abstract class AbstractMapper {
 	}
 	
 	protected void endTransaction() {
-		System.out.println("END TRANSACTION");
+		System.out.println("END TRANSACTION " + System.currentTimeMillis());
 		try {
 			getConnection().setAutoCommit(false);
 		} catch (SQLException e) {
 			throw new ApplicationException(e);
 		}
+	}
+
+	public int countById(long id) {
+		PreparedStatement statement = null;
+		try {
+			statement = getConnection().prepareStatement(countByIdStatement());
+			statement.setLong(1, id);
+			System.out.println(statement);
+			ResultSet rs = statement.executeQuery();
+			if (rs.next()) {
+				return rs.getInt(1);
+			} else {
+				return 0;
+			}
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {
+			closeStatement(statement);
+		}
+	}
+	
+	/**
+	 * Stub method, should be overwritten in subclasses.
+	 * @return
+	 */
+	protected String countByIdStatement() {
+		return "";
 	}
 }
