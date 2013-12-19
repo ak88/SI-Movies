@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import dk.kea.si.movies.domain.Cache;
 import dk.kea.si.movies.domain.DomainObject;
 import dk.kea.si.movies.domain.Movie;
+import dk.kea.si.movies.domain.User;
 import dk.kea.si.movies.persistence.mappers.AbstractMapper;
 import dk.kea.si.movies.persistence.mappers.CacheMapper;
+import dk.kea.si.movies.persistence.mappers.UserMapper;
 
 //import com.marv.business.entities.AuctionItem;
 //import com.marv.business.entities.DomainObject;
@@ -99,6 +101,14 @@ public class PersistenceFacade implements Cloneable {
 		return mapperFactory.getMapper(domainClass).countById(id);
 	}
 
+	public int countByUserName(String userName, Class<?> domainClass) {
+		return mapperFactory.getMapper(domainClass).countByUserName(userName);
+	}
+
+	public int countByEmail(String email, Class<?> domainClass) {
+		return mapperFactory.getMapper(domainClass).countByEmail(email);
+	}
+
 //	public ArrayList<AuctionItem> findAllAuctionItemsByCategory(long categoryId) {
 //		AuctionItemMapper mapper = 
 //				(AuctionItemMapper)mapperFactory.getMapper(AuctionItem.class);
@@ -109,4 +119,9 @@ public class PersistenceFacade implements Cloneable {
 //		UserMapper mapper = (UserMapper) mapperFactory.getMapper(User.class);
 //		return mapper.findByOpenId(identifier);
 //	}
+	
+	public DomainObject findByUserName(User user) {
+		UserMapper mapper = (UserMapper) mapperFactory.getMapper(User.class);
+		return mapper.findByUsername(user);
+	}
 }

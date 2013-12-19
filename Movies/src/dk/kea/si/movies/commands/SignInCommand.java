@@ -40,9 +40,7 @@ public class SignInCommand extends FrontCommand {
 			String status = (String) obj.get("stat");
 			if(status.equals("ok")) {
 				User parsedUser = parseUserData(obj);
-
-				HttpSession session = request.getSession(true);
-				session.setAttribute("authenticated.user", parsedUser);	
+				startSession(parsedUser);	
 			} else {
 				throw new ApplicationException("Not authenticated!");
 			}
@@ -61,7 +59,7 @@ public class SignInCommand extends FrontCommand {
 		openId.setProvider((String) profile.get("providerName"));
 		User user = new User();
 		user.addOpenId(openId);
-		user.setUsername((String) profile.get("displayName"));
+		user.setDisplayName((String) profile.get("displayName"));
 		user.setEmail((String) profile.get("email"));
 		user.setPhone((String) profile.get("phoneNumber"));
 		user.setAddress((String) profile.get("address"));

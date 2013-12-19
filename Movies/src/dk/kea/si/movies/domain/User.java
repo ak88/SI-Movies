@@ -1,10 +1,16 @@
 package dk.kea.si.movies.domain;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import dk.kea.si.movies.util.AppUtils;
 
 public class User extends DomainObject {
 
-	private String username;
+	private static final int MAX_OPEN_IDS = 6;
+
+	private String displayName;
 
 	private String password;
 
@@ -17,20 +23,24 @@ public class User extends DomainObject {
 	private String firstName;
 
 	private String lastName;
+	
+	private String userName;
+	
+	private String salt;
 
 	private ArrayList<OpenID> openIds;
 
 	public User() {
 
-		openIds = new ArrayList<OpenID>(6);
+		openIds = new ArrayList<OpenID>(MAX_OPEN_IDS);
 	}
 
-	public String getUsername() {
-		return username;
+	public String getDisplayName() {
+		return displayName;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+	public void setDisplayName(String username) {
+		this.displayName = username;
 		if (username != null && username.length() < 1) {
 			throw new IllegalArgumentException("Username must not be empty.");
 		}
@@ -44,14 +54,14 @@ public class User extends DomainObject {
 		return password;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
-		if (password != null && password.length() < 1) {
-			throw new IllegalArgumentException("PW must not be empty.");
+	public void setPassword(String pass) {
+		this.password = AppUtils.sha256(pass);
+		if (pass != null && pass.length() < 1) {
+			throw new IllegalArgumentException("Password must not be empty.");
 		}
-		if (password != null && password.length() > 255) {
+		if (pass != null && pass.length() < 8) {
 			throw new IllegalArgumentException(
-					"PW must not be longer than 255 characters.");
+					"Password must not be shorter than 8 characters.");
 		}
 	}
 
@@ -61,9 +71,16 @@ public class User extends DomainObject {
 
 	public void setEmail(String email) {
 		this.email = email;
-		if (email != null && email.length() > 50) {
-			throw new IllegalArgumentException(
-					"Email must not be longer than 50 characters.");
+		if (email != null) {
+			if (email.length() < 1) {
+				throw new IllegalArgumentException("Email must not be empty.");
+			} else {
+				Pattern p = Pattern.compile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+				Matcher m = p.matcher(email);
+				if(!m.matches()) {
+					throw new IllegalArgumentException("Invalid email address.");
+				}
+			}
 		}
 	}
 
@@ -126,9 +143,9 @@ public class User extends DomainObject {
 
 	@Override
 	public String toString() {
-		String result = "[" + address + ", " + email + ", " + firstName + ", "
+		String result = "[" + getId() + ", " + address + ", " + email + ", " + firstName + ", "
 				+ lastName + ", " + password + ", "
-				+ phone + ", " + username + ", [";
+				+ phone + ", " + displayName + ", [";
 		for (int i = 0; i < openIds.size(); i++) {
 			result += openIds.get(i).toString();
 		}
@@ -154,5 +171,32 @@ public class User extends DomainObject {
 		} else {
 			return null;
 		}
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+		if (userName != null && userName.length() < 1) {
+			throw new IllegalArgumentException("Username must not be empty.");
+		}
+		if (userName != null && userName.length() > 20) {
+			throw new IllegalArgumentException(
+					"Username must not be longer than 20 characters.");
+		}
+		if (userName != null && userName.length() < 4) {
+			throw new IllegalArgumentException(
+					"Username must not be shorter than 4 characters.");
+		}
+	}
+
+	public String getSalt() {
+		return salt;
+	}
+
+	public void setSalt(String salt) {
+		this.salt = salt;
 	}
 }

@@ -14,12 +14,13 @@ import dk.kea.si.movies.util.ApplicationException;
 public class UserMapper extends AbstractMapper {
 
 	public static final String COLUMNS = "User.id, User.address, User.email," +
-			" User.first_name, User.last_name, User.user_name, User.phone";
+			" User.first_name, User.last_name, User.display_name, User.phone," +
+			" User.username, User.password, User.salt";
 
 	protected String findStatement() {
 		return "SELECT " + COLUMNS + " FROM User AS User" +
 				" WHERE User.id=?" +
-				" LIMIT 1";
+				" LIMIT 1;";
 	}
 	
 	protected String findByOpenIdStatement() {
@@ -27,7 +28,15 @@ public class UserMapper extends AbstractMapper {
 				" LEFT JOIN open_ids AS OpenID" +
 					" ON User.id=OpenID.user_id" +
 				" WHERE OpenID.identifier=?" +
-				" LIMIT 1";
+				" LIMIT 1;";
+	}
+
+	private String findByUsernameStatement() {
+		return "SELECT " + COLUMNS + " FROM User AS User" +
+				" LEFT JOIN OpenID AS OpenID" +
+					" ON User.id=OpenID.user_id" +
+				" WHERE User.username=?" +
+				" LIMIT 1;";
 	}
 
 	@Override
@@ -45,13 +54,23 @@ public class UserMapper extends AbstractMapper {
 	@Override
 	protected String insertStatement() {
 		return "INSERT INTO User (address, email, first_name, last_name," +
-				" user_name, phone)" +
-				" VALUES (?, ?, ?, ?, ?, ?)";
+				" display_name, phone, username, password, salt)" +
+				" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@Override
 	protected String deleteStatement() {
 		return "DELETE FROM User WHERE id=?";
+	}
+	
+	@Override
+	protected String countByUserNameStatement() {
+		return "SELECT COUNT(*) FROM User WHERE username=?;";
+	}
+	
+	@Override
+	protected String countByEmailStatement() {
+		return "SELECT COUNT(*) FROM User WHERE email=?;";
 	}
 
 	public User find(Long id) {
@@ -69,8 +88,11 @@ public class UserMapper extends AbstractMapper {
 		user.setEmail(rs.getString("User.email"));
 		user.setFirstName(rs.getString("User.first_name"));
 		user.setLastName(rs.getString("User.last_name"));
-		user.setUsername(rs.getString("User.user_name"));
+		user.setDisplayName(rs.getString("User.display_name"));
 		user.setPhone(rs.getString("User.phone"));
+		user.setUserName(rs.getString("User.username"));
+		user.setPassword(rs.getString("User.password"));
+		user.setSalt(rs.getString("User.salt"));
 		return user;
 	}
 
@@ -82,7 +104,7 @@ public class UserMapper extends AbstractMapper {
 		s.setString(2, user.getEmail());
 		s.setString(3, user.getFirstName());
 		s.setString(4, user.getLastName());
-		s.setString(5, user.getUsername());
+		s.setString(5, user.getDisplayName());
 		s.setString(6, user.getPhone());
 	}
 
@@ -90,13 +112,15 @@ public class UserMapper extends AbstractMapper {
 	protected void doInsert(DomainObject obj, PreparedStatement s)
 			throws SQLException {
 		User user = (User) obj;
-		System.out.println(user);
 		s.setString(1, user.getAddress());
 		s.setString(2, user.getEmail());
 		s.setString(3, user.getFirstName());
 		s.setString(4, user.getLastName());
-		s.setString(5, user.getUsername());
+		s.setString(5, user.getDisplayName());
 		s.setString(6, user.getPhone());
+		s.setString(7, user.getUserName());
+		s.setString(8, user.getPassword());
+		s.setString(9, user.getSalt());
 	}
 	
 	@Override
@@ -125,6 +149,25 @@ public class UserMapper extends AbstractMapper {
 		try {
 			statement = getConnection().prepareStatement(findByOpenIdStatement());
 			statement.setString(1, identifier);
+			ResultSet rs = statement.executeQuery();
+			if(rs.next()) {
+				return (User) load(rs);
+			} else {
+				return null;
+			}
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {
+			closeStatement(statement);
+		}
+	}
+
+	public DomainObject findByUsername(User user) {
+		PreparedStatement statement = null;
+		try {
+			statement = getConnection().prepareStatement(findByUsernameStatement());
+			statement.setString(1, user.getUserName());
+			System.out.println(statement);
 			ResultSet rs = statement.executeQuery();
 			if(rs.next()) {
 				return (User) load(rs);
