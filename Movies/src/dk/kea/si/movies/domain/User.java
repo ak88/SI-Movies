@@ -1,10 +1,9 @@
 package dk.kea.si.movies.domain;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import dk.kea.si.movies.util.AppUtils;
 
 public class User extends DomainObject {
 
@@ -29,6 +28,8 @@ public class User extends DomainObject {
 	private String salt;
 
 	private ArrayList<OpenID> openIds;
+	
+	private Timestamp blockedUntil;
 
 	public User() {
 
@@ -55,7 +56,7 @@ public class User extends DomainObject {
 	}
 
 	public void setPassword(String pass) {
-		this.password = AppUtils.sha256(pass);
+		this.password = pass;		
 		if (pass != null && pass.length() < 1) {
 			throw new IllegalArgumentException("Password must not be empty.");
 		}
@@ -143,14 +144,11 @@ public class User extends DomainObject {
 
 	@Override
 	public String toString() {
-		String result = "[" + getId() + ", " + address + ", " + email + ", " + firstName + ", "
-				+ lastName + ", " + password + ", "
-				+ phone + ", " + displayName + ", [";
-		for (int i = 0; i < openIds.size(); i++) {
-			result += openIds.get(i).toString();
-		}
-		result += "] ]";
-		return result;
+		return String
+				.format("User [displayName=%s, password=%s, email=%s, phone=%s, address=%s, firstName=%s, lastName=%s, userName=%s, salt=%s, openIds=%s, blockedUntil=%s, getId()=%s]",
+						displayName, password, email, phone, address,
+						firstName, lastName, userName, salt, openIds,
+						blockedUntil, getId());
 	}
 
 	public ArrayList<OpenID> getOpenIds() {
@@ -198,5 +196,13 @@ public class User extends DomainObject {
 
 	public void setSalt(String salt) {
 		this.salt = salt;
+	}
+
+	public Timestamp getBlockedUntil() {
+		return blockedUntil;
+	}
+
+	public void setBlockedUntil(Timestamp blockedUntil) {
+		this.blockedUntil = blockedUntil;
 	}
 }

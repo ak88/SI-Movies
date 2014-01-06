@@ -53,9 +53,11 @@ public class RegisterCommand extends FrontCommand {
 		UserHelper helper = new UserHelper(user);
 		helper.setUsername(request.getParameter("username"));
 		helper.setEmail(request.getParameter("email"));
+		helper.validatePassword(request.getParameter("password"));
 		helper.setPassword(request.getParameter("password"));
 		helper.comparePassword(request.getParameter("repeatpassword"));
-		helper.setPassword(prefix + request.getParameter("password") + salt);
+		String password = prefix + request.getParameter("password") + salt;
+		helper.setPassword(AppUtils.sha256(password));
 		return helper;
 	}
 

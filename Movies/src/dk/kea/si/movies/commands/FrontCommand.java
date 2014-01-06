@@ -12,12 +12,11 @@ import javax.servlet.http.HttpSession;
 import dk.kea.si.movies.domain.User;
 import dk.kea.si.movies.persistence.core.PersistenceFacade;
 import dk.kea.si.movies.util.AppUtils;
+import dk.kea.si.movies.util.ApplicationException;
 import dk.kea.si.movies.util.Constants;
 
 
 public abstract class FrontCommand {
-
-	private static final String SESSION_USER_KEY = "authenticated.user";
 
 	protected ServletContext context;
 	
@@ -59,15 +58,15 @@ public abstract class FrontCommand {
 
 	protected void startSession(User user) {
 		HttpSession session = request.getSession(true);
-		session.setAttribute(SESSION_USER_KEY, user);
+		session.setAttribute(Constants.SESSION_USER_KEY, user);
 		setCSRFProtectionKey(session);
 	}
 
-	protected void setCSRFProtectionKey(HttpSession session) {
-		if(session.getAttribute(Constants.SESSION_CSRF_KEY) == null) {
-			String csrfKey = AppUtils.sha256(session.getId());
+	private void setCSRFProtectionKey(HttpSession session) {
+		//if(session.getAttribute(Constants.SESSION_CSRF_KEY) == null) {
+			String csrfKey = AppUtils.generateSalt();
 			session.setAttribute(Constants.SESSION_CSRF_KEY, csrfKey);
-		}
+		//}
 	}
 	
 	protected void setCSRFProtectionKey() {
@@ -82,7 +81,8 @@ public abstract class FrontCommand {
 	protected boolean hasValidCSRFToken() {
 		String submittedCSRFKey = request.getParameter(Constants.SESSION_CSRF_KEY);
 		HttpSession session = request.getSession();
-		String CSRFKey = AppUtils.sha256(session.getId());
+		//String CSRFKey = AppUtils.sha256(session.getId());
+		String CSRFKey = (String) session.getAttribute(Constants.SESSION_CSRF_KEY);
 		//System.out.println(submittedCSRFKey);
 		//System.out.println(CSRFKey);
 //		if(submittedCSRFKey == null) {
@@ -103,6 +103,16 @@ public abstract class FrontCommand {
 			request.setAttribute(Constants.ERROR_MESSAGE_KEY, msg);
 			//TODO: log possible CSRF attempt
 			return false;
+		}
+	}
+	
+	protected boolean isAuthenticatedUser() {
+		return request.getSession().getAttribute(Constants.SESSION_USER_KEY) != null;
+	}
+	
+	protected void rejectUnauthenticatedUser() {
+		if(!isAuthenticatedUser()) {
+			throw new ApplicationException(ApplicationException.AUTH_EXCEPTION);
 		}
 	}
 }

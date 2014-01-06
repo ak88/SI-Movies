@@ -14,8 +14,13 @@ public abstract class AHelper implements Serializable {
 		if(errors == null || !errors.containsKey(fieldName)) {
 			return "";
 		} else {
-			return errors.get(fieldName);
+			String message = errors.get(fieldName);
+			return message.replaceAll("(\r\n|\n\r|\n)", "<br />");
 		}
+	}
+	
+	public void setError(String key, String value) {
+		getErrors().put(key, value);
 	}
 	
 	public Map<String, String> getErrors() {
@@ -25,7 +30,7 @@ public abstract class AHelper implements Serializable {
 		return errors;
 	}
 	
-	protected String escapeXml(String str) {
+	protected String sanitize(String str) {
 		return StringEscapeUtils.escapeXml(str);
 	}
 }

@@ -6,10 +6,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 
 import dk.kea.si.movies.domain.DomainObject;
@@ -180,6 +182,27 @@ public abstract class AbstractMapper {
 		try {
 			preparedStatement = getConnection().prepareStatement(
 					findAllStatement());
+			System.out.println(preparedStatement);
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while (resultSet.next()) {
+				result.add(load(resultSet));
+			}
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {
+			closeStatement(preparedStatement);
+		}
+		return result;
+	}
+	
+	public ArrayList<DomainObject> findLatestListByMovieId(long movieId) {
+		ArrayList<DomainObject> result = new ArrayList<DomainObject>();
+		PreparedStatement preparedStatement = null;
+		try {
+			preparedStatement = getConnection().prepareStatement(
+					findLatestListByMovieIdStatement());
+			preparedStatement.setLong(1, movieId);
+			System.out.println(preparedStatement);
 			ResultSet resultSet = preparedStatement.executeQuery();
 			while (resultSet.next()) {
 				result.add(load(resultSet));
@@ -320,6 +343,16 @@ public abstract class AbstractMapper {
 	protected Date calendarToDate(Calendar calendar) {
 		return new Date(calendar.getTime().getTime());
 	}
+
+	protected Calendar timestampToCalendar(Timestamp timestamp) {
+		if (timestamp != null) {
+			Calendar localTime = Calendar.getInstance(TimeZone.getDefault());
+			localTime.setTimeInMillis(timestamp.getTime());
+			return localTime;
+		} else {
+			return null;
+		}
+	}
 	
 	protected AbstractMapper getMapper(Class<? extends Object> domainClass) {
 		return MapperFactory.getInstance().getMapper(domainClass);
@@ -407,6 +440,18 @@ public abstract class AbstractMapper {
 		}
 	}
 	
+	protected boolean resultSetContainsColumn(ResultSet rs, String columnName)
+			throws SQLException {
+		// rs.findColumn(columnName) is used instead of rs.getMetaData() 
+		// in order to bypass MySQL bug related to the use of aliases.
+		try {
+			rs.findColumn(columnName);
+			return true;
+		} catch (SQLException e) {
+			return false;
+		}
+	}
+	
 	/**
 	 * Stub method, should be overwritten in subclasses.
 	 * @return
@@ -428,6 +473,15 @@ public abstract class AbstractMapper {
 	 * @return
 	 */
 	protected String countByEmailStatement() {
+		return "";
+	}
+
+	
+	/**
+	 * Stub method, should be overwritten in subclasses.
+	 * @return
+	 */
+	protected String findLatestListByMovieIdStatement() {
 		return "";
 	}
 }

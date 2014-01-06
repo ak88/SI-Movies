@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 
 import dk.kea.si.movies.domain.Cache;
 import dk.kea.si.movies.domain.Clips;
+import dk.kea.si.movies.domain.Comment;
 import dk.kea.si.movies.domain.CompleteCast;
 import dk.kea.si.movies.domain.GoogleVideo;
 import dk.kea.si.movies.domain.Movie;
@@ -18,12 +19,46 @@ import dk.kea.si.movies.domain.Reviews;
 import dk.kea.si.movies.gateways.GoogleGateway;
 import dk.kea.si.movies.gateways.RottenTomatoesGateway;
 import dk.kea.si.movies.gateways.WikipediaGateway;
+import dk.kea.si.movies.helpers.CommentsListHelper;
 
 public class MovieCommand extends FrontCommand {
 
 	@Override
 	public void process() throws ServletException, IOException {
+		setCSRFProtectionKey();
+		
 		String id = request.getParameter("id");
+		if(!id.matches("\\d+")) { // if id is not a digit
+			forward("/unknown.jsp");
+			return;
+		}
+		
+		Movie movie = retrieveMovie(id);
+		request.setAttribute("movie", movie);
+		
+		String query = movie.getTitle() + " " + movie.getYear() + " trailer";
+		ArrayList<GoogleVideo> googleVideos = GoogleGateway.findVideos(
+				googleApiKey, query);
+		request.setAttribute("googleVideos", googleVideos);
+		
+		String wikiPage = WikipediaGateway.getWikiPage(movie.getTitle(),
+				movie.getYear());
+		//fix relative urls
+		wikiPage = wikiPage.replaceAll("a href=\"#", "a href=\""
+				+ getFullRequestURL() + "#");
+		request.setAttribute("wikiPage", wikiPage);
+		
+		@SuppressWarnings("unchecked")
+		ArrayList<Comment> comments = (ArrayList<Comment>) getStorage()
+				.findLatestListByMovieId(Comment.class, movie.getId());
+		CommentsListHelper commentsHelper = new CommentsListHelper(comments);
+		request.setAttribute("commentsHelper", commentsHelper);
+	
+		forward("/movie.jsp");
+	}
+
+	private Movie retrieveMovie(String id) throws MalformedURLException,
+			IOException {
 		Movie movie = retrieveCachedMovie(id);
 		
 		Reviews reviews = retrieveCachedReviews(id);
@@ -44,22 +79,7 @@ public class MovieCommand extends FrontCommand {
 			//TODO: implement movie update
 			//getStorage().update(dbMovie);
 		}
-		
-		request.setAttribute("movie", movie);
-		
-		String query = movie.getTitle() + " " + movie.getYear() + " trailer";
-		ArrayList<GoogleVideo> googleVideos = GoogleGateway.findVideos(
-				googleApiKey, query);
-		request.setAttribute("googleVideos", googleVideos);
-		
-		String wikiPage = WikipediaGateway.getWikiPage(movie.getTitle(),
-				movie.getYear());
-		//fix relative urls
-		wikiPage = wikiPage.replaceAll("a href=\"#", "a href=\""
-				+ getFullRequestURL() + "#");
-		request.setAttribute("wikiPage", wikiPage);
-		
-		forward("/movie.jsp");
+		return movie;
 	}
 
 	private CompleteCast retrieveCachedCast(String id)

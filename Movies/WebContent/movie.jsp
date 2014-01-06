@@ -2,9 +2,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <jsp:useBean id="movie" scope="request"
-	class="dk.kea.si.movies.domain.Movie"></jsp:useBean>
+	class="dk.kea.si.movies.domain.Movie" />
 <jsp:useBean id="googleVideos" scope="request" 
-	type="java.util.ArrayList<dk.kea.si.movies.domain.GoogleVideo>"></jsp:useBean>
+	type="java.util.ArrayList<dk.kea.si.movies.domain.GoogleVideo>" />
+<jsp:useBean id="commentsHelper" scope="request"
+	class="dk.kea.si.movies.helpers.CommentsListHelper" />
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -13,10 +15,13 @@
 	
 	<base href="<%=request.getContextPath()%>/" />
 	<link rel="stylesheet" type="text/css" href="css/style.css" />
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+	<script src="js/movie.js"></script>
+	
 </head>
 <body>		
 	<div id="shell">
-		<%@ include file="inc/header.jsp"%>
+		<%@ include file="inc/header.jspf"%>
 
 		<div id="main">
 			<div id="content">
@@ -66,24 +71,56 @@
 				</div>
 			</div>
 			<div>
-				<h4>Trailers:</h4>
-				<% for (int i = 0; i < googleVideos.size(); i++) { %>
-				<div>
-					<h3><%=googleVideos.get(i).getTitle()%></h3>
-					<iframe width="640" height="390"
-						src="http://www.youtube.com/embed/<%= googleVideos.get(i).getId() %>?autoplay=0"
-						frameborder="1" allowfullscreen></iframe>
+				<h4 class="toggleable">Trailers</h4>
+				<div class="hidden_on_load">
+					<% for (int i = 0; i < googleVideos.size(); i++) { %>
+					<div>
+						<h3><%=googleVideos.get(i).getTitle()%></h3>
+						<iframe width="640" height="390"
+							src="http://www.youtube.com/embed/<%= googleVideos.get(i).getId() %>?autoplay=0"
+							frameborder="1" allowfullscreen></iframe>
+					</div>
+					<% } %>
 				</div>
-				<% } %>
 			</div>
 			
 			<div>
-				<h4>Wikipedia:</h4>
-				<%=request.getAttribute("wikiPage")%>
+				<h4 class="toggleable">Wikipedia</h4>
+				<div class="hidden_on_load">
+					<%=request.getAttribute("wikiPage")%>
+				</div>
+			</div>
+			
+			<div>
+				<h4 class="toggleable">Comments</h4>
+				<div class="hidden_on_load">
+					<% if(commentsHelper.size() > 0) { %>
+						<ul id="comments_list">
+							<% for(int i = 0; i < commentsHelper.size(); i++) { %>
+								<li>
+									<h3><%= commentsHelper.getAuthorDisplayName(i) %></h3>
+									<%= commentsHelper.getCommentText(i) %>
+								</li>
+							<% } %>
+						</ul>
+					<% } %>
+					<% if(session.getAttribute(Constants.SESSION_USER_KEY) != null) { %>
+					<form id="comment_form">
+						<input type="hidden" name="command" value="Comment" />
+						<input type="hidden" 
+							name="<%=Constants.SESSION_CSRF_KEY %>" 
+							value="<%=session.getAttribute(Constants.SESSION_CSRF_KEY) %>" />
+						<input type="hidden" name="movie_id" value="<%=movie.getId() %>" />
+						<input type="hidden" name="parent_id" value="" />
+						<textarea id="comment_text" name="comment_text"></textarea>
+						<input type="submit" value="Submit" />
+					</form>
+					<% } %>
+				</div>
 			</div>
 		</div>
 
-		<%@ include file="inc/footer.jsp"%>
+		<%@ include file="inc/footer.jspf"%>
 	</div>
 </body>
 </html>
