@@ -13,7 +13,8 @@ $(document).ready(function() {
 	});
 	
 	
-	/* Save comment form handler.
+	/**
+	 * Save comment form handler.
 	 * 
 	 * Ref.: http://stackoverflow.com/questions/5004233/jquery-ajax-post-example-with-php */
 	// variable to hold request
@@ -33,13 +34,50 @@ $(document).ready(function() {
 			url: "default.jsp",
 			data: $(this).serialize(),
 			success: function(msg){
-				alert("Data Saved: " + msg );
-	            //$("#result").html('Submitted successfully');
+				prependComment(msg);
+				$("#comment_text").val("");
 	        },
-	        error: function(jqXHR, textStatus){
-	            alert("Cannot save the comment: " + textStatus);
-	           // $("#result").html('There is error while submit');
-	        }
+		});
+	});
+	
+	/**
+	 * Delete comment form handler.
+	 */
+	$("form[name=delete_comment]").submit(function(event) {
+		event.preventDefault();
+		if (request) {
+			request.abort();
+		}
+		var listItem = $(this).parent("li");
+		request = $.ajax({
+			type : "post",
+			url : "default.jsp",
+			data : $(this).serialize(),
+			success : function(msg) {
+				if(msg == "1") {
+					listItem.remove();
+				}	
+			},
 		});
 	});
 });
+
+/**
+ * Retrieves a single comment from the server and inserts it as a first item
+ * into the comments list on the page.
+ * 
+ * @param id
+ *            comment id
+ */
+function prependComment(id) {
+	$.ajax({
+		type : "get",
+		url : "default.jsp?command=Comment&id=" + id,
+		dataType : "json",
+		success : function(comment) {
+			var item = "<li><h3>" + comment.author + "</h3>" + comment.text
+					+ "</li>";
+			$("#comments_list").prepend(item);
+		},
+	});
+}
